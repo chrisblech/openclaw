@@ -1,0 +1,71 @@
+name: On-demand rebase + version branch
+
+on:
+  repository_dispatch:
+    types: [vps_rebase_request]
+
+permissions:
+  contents: write
+
+jobs:
+  rebase_and_branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout fork (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream + fetch refs/tags
+        run: |
+          git remote add upstream https://github.com/openclaw/openclaw.git || true
+          git fetch upstream --prune --tags
+          git fetch origin --prune --tags
+
+      - name: Fast-forward fork main to upstream/main
+        run: |
+          git checkout main
+          git reset --hard upstream/main
+          git push origin main --force-with-lease
+
+      - name: Determine latest upstream release tag
+        run: |
+          TAG="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/openclaw/openclaw/releases/latest | sed 's#.*/tag/##')"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "VERSION_BRANCH=openclaw-cb-$TAG" >> "$GITHUB_ENV"
+          echo "Latest tag: $TAG"
+          echo "Version branch: openclaw-cb-$TAG"
+
+      - name: Abort early if version branch already exists
+        run: |
+          if git ls-remote --exit-code --heads origin "refs/heads/${VERSION_BRANCH}" >/dev/null 2>&1; then
+            echo "Branch ${VERSION_BRANCH} already exists. Nothing to do."
+            exit 0
+          fi
+
+      - name: Rebase openclaw-cb onto latest release tag
+        run: |
+          git checkout openclaw-cb
+          git rebase --rebase-merges "$TAG"
+
+      # Optional: hier Tests/Build laufen lassen und bei Fehler abbrechen
+      # - name: Test/Build
+      #   run: |
+      #     corepack enable
+      #     pnpm install --frozen-lockfile
+      #     pnpm test
+
+      - name: Push updated openclaw-cb (rebased)
+        run: |
+          git push origin openclaw-cb --force-with-lease
+
+      - name: Create and push version branch
+        run: |
+          git branch "${VERSION_BRANCH}"
+          git push origin "${VERSION_BRANCH}"
