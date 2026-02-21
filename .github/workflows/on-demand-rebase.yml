@@ -1,4 +1,11 @@
-name: On-demand rebase + version branch
+## This workflow updates "main" branch in this (fork) repository to "latest" release version of upstream/main,
+## and rebases "main-cb" branch onto this version.
+## To be able to trigger this workflow...
+## - create a PAT (Personal settings - dev-settings - PAT/fine-grained - this repo, Content:rw,Workflow:rw)
+## - paste it to: this repo settings - Secrets - Action secrets - Name: "WORKFLOW_TOKEN"
+## - Change default branch to "main-cb" (to enable this workflow, but avoid being deleted by FF on main)
+
+name: On-demand rebase + version tag
 
 on:
   repository_dispatch:
@@ -12,10 +19,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout fork (full history)
+      - name: Checkout fork (full history, PAT for push)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.WORKFLOW_TOKEN }}
 
       - name: Configure git
         run: |
@@ -37,21 +45,20 @@ jobs:
       - name: Determine latest upstream release tag
         run: |
           TAG="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/openclaw/openclaw/releases/latest | sed 's#.*/tag/##')"
+          echo "Latest upstream release tag: $TAG"
           echo "TAG=$TAG" >> "$GITHUB_ENV"
-          echo "VERSION_BRANCH=openclaw-cb-$TAG" >> "$GITHUB_ENV"
-          echo "Latest tag: $TAG"
-          echo "Version branch: openclaw-cb-$TAG"
+          echo "VERSION_TAG=${TAG}-cb" >> "$GITHUB_ENV"
 
-      - name: Abort early if version branch already exists
+      - name: Abort early if version tag already exists
         run: |
-          if git ls-remote --exit-code --heads origin "refs/heads/${VERSION_BRANCH}" >/dev/null 2>&1; then
-            echo "Branch ${VERSION_BRANCH} already exists. Nothing to do."
+          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION_TAG}" >/dev/null 2>&1; then
+            echo "Tag ${VERSION_TAG} already exists. Nothing to do."
             exit 0
           fi
 
-      - name: Rebase openclaw-cb onto latest release tag
+      - name: Rebase main-cb onto latest release tag
         run: |
-          git checkout openclaw-cb
+          git checkout main-cb
           git rebase --rebase-merges "$TAG"
 
       # Optional: hier Tests/Build laufen lassen und bei Fehler abbrechen
@@ -61,11 +68,11 @@ jobs:
       #     pnpm install --frozen-lockfile
       #     pnpm test
 
-      - name: Push updated openclaw-cb (rebased)
+      - name: Push updated main-cb (rebased)
         run: |
-          git push origin openclaw-cb --force-with-lease
+          git push origin main-cb --force-with-lease
 
       - name: Create and push version branch
         run: |
-          git branch "${VERSION_BRANCH}"
-          git push origin "${VERSION_BRANCH}"
+          git tag -a "${VERSION_TAG}" -m "Fork rebased on release ${TAG}"
+          git push origin "${VERSION_TAG}"
