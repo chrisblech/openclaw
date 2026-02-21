@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export GIT_PAGER=cat
+exec 2>&1
+
+STASH_NAME="autoupdate-local-$(date -Is)"
 
 # Konfiguration via /etc/openclaw/deploy.env (systemd EnvironmentFile)
 : "${GITHUB_TOKEN:?GITHUB_TOKEN not set}"
@@ -12,7 +16,7 @@ LOCK_FILE="${LOCK_FILE:-/run/openclaw/deploy.lock}"
 
 UPSTREAM_LATEST_URL="${UPSTREAM_LATEST_URL:-https://github.com/openclaw/openclaw/releases/latest}"
 
-log() { echo "[$(date -Is)] $*"; }
+log() { echo "[$(date +%F_%X)] $*"; }
 
 # Prevent parallel runs
 exec 9>"$LOCK_FILE"
@@ -26,7 +30,7 @@ TAG="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "${UPSTREAM_LATEST_URL}" |
 VERSION_TAG="${TAG}-cb"
 
 log "Upstream latest tag: ${TAG}"
-log "Expecting tag:    ${VERSION_TAG}"
+log "Expecting tag:       ${VERSION_TAG}"
 
 log "Trigger GitHub workflow via repository_dispatch..."
 curl -fsSL -X POST \
@@ -59,9 +63,32 @@ if ! git ls-remote --exit-code --tags origin "refs/tags/${VERSION_TAG}" >/dev/nu
   exit 1
 fi
 
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  log "Lokale Änderungen gefunden -> stash (${STASH_NAME})"
+  git stash push -u -m "${STASH_NAME}"
+  STASHED=1
+else
+  STASHED=0
+fi
+
 log "Fetch + checkout latest version..."
 git fetch origin tag ${VERSION_TAG}
-git checkout ${VERSION_TAG}
+git checkout --force ${VERSION_TAG}
+
+if [ "${STASHED}" -eq 1 ]; then
+  log "Versuche lokale Änderungen wieder anzuwenden (stash pop)..."
+  if git stash pop; then
+    log "Stash erfolgreich angewendet."
+  else
+    log "KONFLIKT beim Anwenden des Stash!"
+    log "Status:"
+    git status --porcelain=v1 || true
+    log "Stash bleibt erhalten. Du kannst ihn manuell anwenden:"
+    log "  git stash list"
+    log "  git stash apply stash@{0}"
+    exit 1
+  fi
+fi
 
 log "Deploy script finished. Starting build..."
 

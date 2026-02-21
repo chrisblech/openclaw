@@ -162,6 +162,9 @@ ExecStart=${DEPLOY_SH}
 StandardOutput=journal+console
 StandardError=journal+console
 
+KillMode=control-group
+TimeoutStopSec=30
+
 # Optional: nach erfolgreichem Build den eigentlichen Dienst neu starten
 # (Passe "openclaw.service" an deinen echten Service-Namen an)
 # ExecStartPost=/bin/systemctl restart openclaw.service
