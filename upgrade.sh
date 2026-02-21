@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+UNIT="openclaw-deploy.service"
+log() { echo "[upgrade.sh] $*"; }
+
 # ----------------------------
 # 0) Root-Check
 # ----------------------------
@@ -8,10 +11,6 @@ if [ "$(id -u)" -ne 0 ]; then
   echo "ERROR: Dieses Skript muss als root laufen. Bitte mit sudo ausführen."
   exit 1
 fi
-
-UNIT="openclaw-deploy.service"
-
-log() { echo "[upgrade.sh] $*"; }
 
 # Startzeit merken, damit wir nur neue Logs streamen
 SINCE="$(date --iso-8601=seconds)"
@@ -21,14 +20,12 @@ if systemctl is-active --quiet "$UNIT"; then
   log "$UNIT läuft bereits – hänge Logs an."
 else
   log "Starte $UNIT…"
-  systemctl start "$UNIT"
+  (systemctl start --no-block "$UNIT") &
 fi
 
-# Watcher: wartet bis Unit nicht mehr active ist, dann beendet er journalctl (Foreground)
-# -> killt den Prozess in der aktuellen Prozessgruppe (journalctl läuft im Vordergrund)
+# Watcher beendet journalctl wenn Unit fertig
 (
-  # warten, bis Unit fertig ist
-  while systemctl is-active --quiet "$UNIT"; do
+  while systemctl is-active --quiet "$UNIT" || systemctl is-activating --quiet "$UNIT"; do
     sleep 0.5
   done
 
@@ -39,10 +36,6 @@ fi
   echo
   log "Service fertig. Result=${RESULT:-?} ExitCode=${EC:-?}"
 
-  # journalctl im Vordergrund beenden (SIGTERM an die Prozessgruppe)
-  # (kill 0 sendet an Prozessgruppe; wir wollen aber nur journalctl beenden)
-  # Daher: PID aus parent (upgrade.sh) via pgrep im aktuellen TTY ist tricky.
-  # Einfacher: wir beenden die gesamte FG-Pipeline via SIGINT an uns selbst:
   kill -INT "$$" 2>/dev/null || true
 ) &
 
@@ -53,9 +46,4 @@ WATCHER_PID=$!
 # -o short-iso: gut lesbar, inkl. Zeit
 # stdbuf: erzwingt line-buffering (hilft in manchen TTY/tmux Fällen zusätzlich)
 log "Zeige Live-Logs (endet automatisch wenn Service stoppt)…"
-# stdbuf -oL -eL journalctl -u "$UNIT" -f --no-pager -o short-iso --since "$SINCE"
-journalctl -u "$UNIT" -f --no-pager -o short-iso --since "$SINCE"
-
-# Wenn journalctl endet (durch Watcher oder manuell), Watcher sauber aufräumen
-kill "$WATCHER_PID" >/dev/null 2>&1 || true
-wait "$WATCHER_PID" >/dev/null 2>&1 || true
+exec stdbuf -oL -eL journalctl -u "$UNIT" -f --no-pager -o short-iso --since "$SINCE"

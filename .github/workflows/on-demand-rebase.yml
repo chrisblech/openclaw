@@ -38,8 +38,7 @@ jobs:
 
       - name: Fast-forward fork main to upstream/main
         run: |
-          git checkout main
-          git reset --hard upstream/main
+          git checkout --force -B main upstream/main
           git push origin main --force-with-lease
 
       - name: Determine latest upstream release tag
