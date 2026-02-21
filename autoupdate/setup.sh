@@ -12,7 +12,7 @@
 #       setup.sh   (dieses Skript)
 #       deploy.sh  (wird von setup.sh erzeugt/überschrieben)
 #       README.md  (optional)
-#
+
 set -euo pipefail
 
 # ----------------------------
@@ -64,14 +64,16 @@ GitHub Token erstellen (Fine-grained PAT) – kurz erklärt
 1) GitHub → Settings → Developer settings → Personal access tokens
 2) Fine-grained token erstellen:
    - Resource owner: dein Account/Org
+   - Expiration: sinnvoll wählen (z.B. 90 Tage) und später rotieren
    - Repository access: nur chrisblech/openclaw (dieses Fork-Repo)
    - Permissions (Repository permissions):
        Contents: Read and write
        Metadata: Read
-   - Expiration: sinnvoll wählen (z.B. 90 Tage) und später rotieren
+       Workflow: Read and write
 
 Warum Write?
-- Der Workflow pusht Branches (openclaw-cb + openclaw-cb-vYYYY.MM.DD).
+- Der Workflow pusht Branches und Tags (main-cb / vYYYY.MM.DD-cb).
+- Bei Upstream-Änderungen in .github/workflows wird diese Permission benötigt
 
 Das Token wird lokal auf der VPS gespeichert in:
   /etc/openclaw/deploy.env
@@ -104,6 +106,7 @@ if id -u "${OPENCLAW_USER}" >/dev/null 2>&1; then
 else
   echo "Lege System-User '${OPENCLAW_USER}' an..."
   useradd --system --home "${REPO_ROOT}" --shell /usr/sbin/nologin "${OPENCLAW_USER}"
+  usermod -aG docker ${OPENCLAW_USER}
 fi
 
 # Repo-Rechte (mindestens lesbar für openclaw; Schreibrechte für Build-Outputs ggf. nötig)
@@ -148,10 +151,16 @@ EnvironmentFile=${ENV_FILE}
 User=${OPENCLAW_USER}
 Group=${OPENCLAW_GROUP}
 
+RuntimeDirectory=openclaw
+RuntimeDirectoryMode=0755
+
 WorkingDirectory=${REPO_ROOT}
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 ExecStart=${DEPLOY_SH}
+
+StandardOutput=journal+console
+StandardError=journal+console
 
 # Optional: nach erfolgreichem Build den eigentlichen Dienst neu starten
 # (Passe "openclaw.service" an deinen echten Service-Namen an)
@@ -162,7 +171,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=${REPO_ROOT} /run
+ReadWritePaths=${REPO_ROOT} /run/openclaw
 EOF
 
 # ----------------------------
