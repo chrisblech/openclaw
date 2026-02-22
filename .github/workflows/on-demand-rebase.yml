@@ -29,6 +29,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config rerere.enabled true
+          git config rerere.autoupdate true
 
       - name: Add upstream + fetch refs/tags
         run: |
@@ -55,10 +57,11 @@ jobs:
             exit 0
           fi
 
-      - name: Rebase main-cb onto latest release tag
+      - name: Merge latest release tag into main-cb
         run: |
-          git checkout main-cb
-          git rebase --rebase-merges "$TAG"
+          git checkout --force -B main-cb origin/main-cb
+          # Merge den Upstream-Release-Tag (Fast-forward vermeiden, damit ein Merge-Commit entsteht)
+          git merge --no-ff --no-edit "$TAG"
 
       # Optional: hier Tests/Build laufen lassen und bei Fehler abbrechen
       # - name: Test/Build
@@ -67,11 +70,11 @@ jobs:
       #     pnpm install --frozen-lockfile
       #     pnpm test
 
-      - name: Push updated main-cb (rebased)
+      - name: Push updated main-cb
         run: |
-          git push origin main-cb --force-with-lease
+          git push origin main-cb
 
       - name: Create and push version branch
         run: |
-          git tag -a "${VERSION_TAG}" -m "Fork rebased on release ${TAG}"
+          git tag -a "${VERSION_TAG}" -m "Fork merged upstream release ${TAG}"
           git push origin "${VERSION_TAG}"
