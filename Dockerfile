@@ -17,13 +17,19 @@ RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
       rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
     fi
 
-# Example binary 1: Gmail CLI
-RUN curl -L https://github.com/steipete/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_amd64.tar.gz \
-  | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/gog
+# Binary 1: Gmail CLI
+ARG OPENCLAW_DOCKER_GOGCLI_VERSION=""
+RUN if [ -n "$OPENCLAW_DOCKER_GOGCLI_VERSION" ]; then \
+      curl -L https://github.com/steipete/gogcli/releases/download/v${OPENCLAW_DOCKER_GOGCLI_VERSION}/gogcli_${OPENCLAW_DOCKER_GOGCLI_VERSION}_linux_amd64.tar.gz \
+      | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/gog \
+    fi
 
-# Example binary 2: Google Places CLI
-RUN curl -L https://github.com/steipete/goplaces/releases/download/v0.3.0/goplaces_0.3.0_linux_amd64.tar.gz \
-  | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/goplaces
+# Binary 2: Google Places CLI
+ARG OPENCLAW_DOCKER_GOPLACES_VERSION=""
+RUN if [ -n "$OPENCLAW_DOCKER_GOPLACES_VERSION" ]; then \
+      curl -L https://github.com/steipete/goplaces/releases/download/v${OPENCLAW_DOCKER_GOPLACES_VERSION}/goplaces_${OPENCLAW_DOCKER_GOPLACES_VERSION}_linux_amd64.tar.gz \
+      | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/goplaces \
+    fi
 
 COPY openclaw.sh /usr/local/bin/openclaw
 RUN chmod +x /usr/local/bin/openclaw
