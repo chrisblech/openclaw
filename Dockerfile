@@ -21,14 +21,14 @@ RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
 ARG OPENCLAW_DOCKER_GOGCLI_VERSION=""
 RUN if [ -n "$OPENCLAW_DOCKER_GOGCLI_VERSION" ]; then \
       curl -L https://github.com/steipete/gogcli/releases/download/v${OPENCLAW_DOCKER_GOGCLI_VERSION}/gogcli_${OPENCLAW_DOCKER_GOGCLI_VERSION}_linux_amd64.tar.gz \
-      | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/gog \
+      | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/gog; \
     fi
 
 # Binary 2: Google Places CLI
 ARG OPENCLAW_DOCKER_GOPLACES_VERSION=""
 RUN if [ -n "$OPENCLAW_DOCKER_GOPLACES_VERSION" ]; then \
       curl -L https://github.com/steipete/goplaces/releases/download/v${OPENCLAW_DOCKER_GOPLACES_VERSION}/goplaces_${OPENCLAW_DOCKER_GOPLACES_VERSION}_linux_amd64.tar.gz \
-      | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/goplaces \
+      | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/goplaces; \
     fi
 
 COPY openclaw.sh /usr/local/bin/openclaw

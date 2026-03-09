@@ -17,8 +17,9 @@ get_latest_github_release_version() {
 
 echo "aktiviere snd-aloop auf dem Host..."
 modprobe snd-aloop
+## Das folgende muss evtl. als "root" User auf dem Host manuell ausgeführt werden
 echo snd-aloop | tee /etc/modules-load.d/snd-aloop.conf
-TELEFON="alsa-utils pulseaudio ffmpeg sox baresip"
+TELEFON="alsa-utils pulseaudio ffmpeg sox baresip python3-dev"
 
 GOGCLI_TAG="$(get_latest_github_release_version "steipete/gogcli")"
 GOPLACES_TAG="$(get_latest_github_release_version "steipete/goplaces")"
