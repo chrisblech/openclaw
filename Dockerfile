@@ -154,32 +154,6 @@ RUN --mount=type=cache,id=openclaw-bookworm-apt-cache,target=/var/cache/apt,shar
       DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $OPENCLAW_DOCKER_APT_PACKAGES; \
     fi
 
-ARG OPENCLAW_DOCKER_APT_PACKAGES=""
-RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
-      apt-get update && \
-      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $OPENCLAW_DOCKER_APT_PACKAGES && \
-      apt-get clean && \
-      rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
-    fi
-
-# Binary 1: Gmail CLI
-ARG OPENCLAW_DOCKER_GOGCLI_VERSION=""
-RUN if [ -n "$OPENCLAW_DOCKER_GOGCLI_VERSION" ]; then \
-      curl -L https://github.com/steipete/gogcli/releases/download/v${OPENCLAW_DOCKER_GOGCLI_VERSION}/gogcli_${OPENCLAW_DOCKER_GOGCLI_VERSION}_linux_amd64.tar.gz \
-      | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/gog; \
-    fi
-
-# Binary 2: Google Places CLI
-ARG OPENCLAW_DOCKER_GOPLACES_VERSION=""
-RUN if [ -n "$OPENCLAW_DOCKER_GOPLACES_VERSION" ]; then \
-      curl -L https://github.com/steipete/goplaces/releases/download/v${OPENCLAW_DOCKER_GOPLACES_VERSION}/goplaces_${OPENCLAW_DOCKER_GOPLACES_VERSION}_linux_amd64.tar.gz \
-      | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/goplaces; \
-    fi
-
-COPY openclaw.sh /usr/local/bin/openclaw
-RUN chmod +x /usr/local/bin/openclaw
-RUN mkdir -p /tmp/.X11-unix && chmod 1777 /tmp /tmp/.X11-unix
-
 # Optionally install Chromium and Xvfb for browser automation.
 # Build with: docker build --build-arg OPENCLAW_INSTALL_BROWSER=1 ...
 # Adds ~300MB but eliminates the 60-90s Playwright install on every container start.

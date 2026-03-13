@@ -1,9 +1,9 @@
 ## This workflow updates "main" branch in this (fork) repository to "latest" release version of upstream/main,
-## and rebases "main-cb" branch onto this version.
+## and rebases "main-my" branch onto this version.
 ## To be able to trigger this workflow...
 ## - create a PAT (Personal settings - dev-settings - PAT/fine-grained - this repo, Content:rw,Workflow:rw)
 ## - paste it to: this repo settings - Secrets - Action secrets - Name: "WORKFLOW_TOKEN"
-## - Change default branch to "main-cb" (to enable this workflow, but avoid being deleted by FF on main)
+## - Change default branch to "autoupdate" (to enable this workflow, but avoid being deleted by FF on main)
 
 name: On-demand rebase + version tag
 
@@ -48,7 +48,7 @@ jobs:
           TAG="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/openclaw/openclaw/releases/latest | sed 's#.*/tag/##')"
           echo "Latest upstream release tag: $TAG"
           echo "TAG=$TAG" >> "$GITHUB_ENV"
-          echo "VERSION_TAG=${TAG}-cb" >> "$GITHUB_ENV"
+          echo "VERSION_TAG=${TAG}-my" >> "$GITHUB_ENV"
 
       - name: Abort early if version tag already exists
         run: |
@@ -57,9 +57,9 @@ jobs:
             exit 0
           fi
 
-      - name: Merge latest release tag into main-cb
+      - name: Merge latest release tag into main-my
         run: |
-          git checkout --force -B main-cb origin/main-cb
+          git checkout --force -B main-my origin/main-my
           # Merge den Upstream-Release-Tag (Fast-forward vermeiden, damit ein Merge-Commit entsteht)
           git merge --no-ff --no-edit "$TAG"
 
@@ -70,9 +70,9 @@ jobs:
       #     pnpm install --frozen-lockfile
       #     pnpm test
 
-      - name: Push updated main-cb
+      - name: Push updated main-my
         run: |
-          git push origin main-cb
+          git push origin main-my
 
       - name: Create and push version branch
         run: |

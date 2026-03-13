@@ -27,7 +27,7 @@ fi
 
 log "Determine latest upstream release tag..."
 TAG="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "${UPSTREAM_LATEST_URL}" | sed 's#.*/tag/##')"
-VERSION_TAG="${TAG}-cb"
+VERSION_TAG="${TAG}-my"
 
 log "Upstream latest tag: ${TAG}"
 log "Expecting tag:       ${VERSION_TAG}"
