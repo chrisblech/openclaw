@@ -18,8 +18,6 @@ RUN if [ -n "$OPENCLAW_DOCKER_GOPLACES_VERSION" ]; then \
       | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/goplaces; \
     fi
 
-COPY openclaw.sh /usr/local/bin/openclaw
-RUN chmod +x /usr/local/bin/openclaw
 RUN mkdir -p /tmp/.X11-unix && chmod 1777 /tmp /tmp/.X11-unix
 
 USER node
