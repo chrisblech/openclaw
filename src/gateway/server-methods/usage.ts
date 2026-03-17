@@ -401,14 +401,7 @@ export const usageHandlers: GatewayRequestHandlers = {
             lastError: typeof obj.lastError === "string" ? obj.lastError : undefined,
           } satisfies CodexAccountLimits;
         })
-        // stable ordering: christoph first, then marc, then others
-        .toSorted((a, b) => {
-          const rank = (k: string) => (k === "christoph" ? 0 : k === "marc" ? 1 : 2);
-          const ra = rank(a.key);
-          const rb = rank(b.key);
-          if (ra !== rb) return ra - rb;
-          return a.key.localeCompare(b.key);
-        });
+        ;
 
       const payload: CodexLimitsSnapshot = {
         source: "codex-limit-watch",
