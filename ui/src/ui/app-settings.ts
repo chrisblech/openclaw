@@ -23,7 +23,6 @@ import { loadCodexLimits, loadUsage } from "./controllers/usage.ts";
 import { loadPresence } from "./controllers/presence.ts";
 import { loadSessions } from "./controllers/sessions.ts";
 import { loadSkills } from "./controllers/skills.ts";
-import { loadUsage } from "./controllers/usage.ts";
 import {
   inferBasePathFromPathname,
   normalizeBasePath,
@@ -219,9 +218,6 @@ export async function refreshActiveTab(host: SettingsHost) {
   }
   if (host.tab === "instances") {
     await loadPresence(host as unknown as OpenClawApp);
-  }
-  if (host.tab === "usage") {
-    await loadUsage(host as unknown as OpenClawApp);
   }
   if (host.tab === "sessions") {
     await loadSessions(host as unknown as OpenClawApp);
