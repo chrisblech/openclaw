@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 import { loadConfig } from "../../config/config.js";
 import {
   resolveSessionFilePath,
@@ -42,6 +43,29 @@ import {
   loadSessionEntry,
 } from "../session-utils.js";
 import type { GatewayRequestHandlers, RespondFn } from "./types.js";
+
+type CodexLimitWindow = {
+  usedPercent?: number;
+  remainingPercent?: number;
+  resetsAt?: number;
+  windowDurationMins?: number;
+};
+
+type CodexAccountLimits = {
+  key: string;
+  label?: string;
+  primary?: CodexLimitWindow | null;
+  secondary?: CodexLimitWindow | null;
+  lastOkAt?: string;
+  lastErrorAt?: string;
+  lastError?: string;
+};
+
+type CodexLimitsSnapshot = {
+  source: "codex-limit-watch";
+  updatedAt?: string;
+  accounts: CodexAccountLimits[];
+};
 
 const COST_USAGE_CACHE_TTL_MS = 30_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -348,6 +372,61 @@ export const __test = {
 export type { SessionUsageEntry, SessionsUsageAggregates, SessionsUsageResult };
 
 export const usageHandlers: GatewayRequestHandlers = {
+  "usage.codexLimits": async ({ respond }) => {
+    const config = loadConfig();
+    const workspace = config.agents?.defaults?.workspace;
+    if (!workspace || typeof workspace !== "string") {
+      respond(true, { source: "codex-limit-watch", accounts: [] } satisfies CodexLimitsSnapshot, undefined);
+      return;
+    }
+    const statePath = path.join(workspace, "memory", "codex-limit-watch.json");
+    try {
+      const raw = fs.readFileSync(statePath, "utf-8");
+      const parsed = JSON.parse(raw) as {
+        lastOkAt?: string;
+        accounts?: Record<string, any>;
+      };
+
+      const accountsObj = parsed?.accounts && typeof parsed.accounts === "object" ? parsed.accounts : {};
+      const accounts: CodexAccountLimits[] = Object.entries(accountsObj)
+        .map(([key, v]) => {
+          const obj = v && typeof v === "object" ? v : {};
+          return {
+            key,
+            label: typeof obj.label === "string" ? obj.label : undefined,
+            primary: obj.primary && typeof obj.primary === "object" ? obj.primary : null,
+            secondary: obj.secondary && typeof obj.secondary === "object" ? obj.secondary : null,
+            lastOkAt: typeof obj.lastOkAt === "string" ? obj.lastOkAt : undefined,
+            lastErrorAt: typeof obj.lastErrorAt === "string" ? obj.lastErrorAt : undefined,
+            lastError: typeof obj.lastError === "string" ? obj.lastError : undefined,
+          } satisfies CodexAccountLimits;
+        })
+        // stable ordering: christoph first, then marc, then others
+        .toSorted((a, b) => {
+          const rank = (k: string) => (k === "christoph" ? 0 : k === "marc" ? 1 : 2);
+          const ra = rank(a.key);
+          const rb = rank(b.key);
+          if (ra !== rb) return ra - rb;
+          return a.key.localeCompare(b.key);
+        });
+
+      const payload: CodexLimitsSnapshot = {
+        source: "codex-limit-watch",
+        updatedAt: parsed.lastOkAt,
+        accounts,
+      };
+
+      respond(true, payload, undefined);
+    } catch (err) {
+      // Missing file => no data yet. Parsing failures should be visible as a soft error.
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("ENOENT")) {
+        respond(true, { source: "codex-limit-watch", accounts: [] } satisfies CodexLimitsSnapshot, undefined);
+        return;
+      }
+      respond(true, { source: "codex-limit-watch", accounts: [], updatedAt: undefined } satisfies CodexLimitsSnapshot, undefined);
+    }
+  },
   "usage.status": async ({ respond }) => {
     const summary = await loadProviderUsageSummary();
     respond(true, summary, undefined);

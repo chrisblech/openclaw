@@ -196,6 +196,9 @@ export type AppViewState = {
   usageResult: SessionsUsageResult | null;
   usageCostSummary: CostUsageSummary | null;
   usageError: string | null;
+  codexLimitsLoading: boolean;
+  codexLimits: import("./types.js").CodexLimitsSnapshot | null;
+  codexLimitsError: string | null;
   usageStartDate: string;
   usageEndDate: string;
   usageSelectedSessions: string[];

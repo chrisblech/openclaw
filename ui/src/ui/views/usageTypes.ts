@@ -5,6 +5,7 @@ import type {
   SessionsUsageTotals,
   SessionUsageTimePoint,
 } from "../usage-types.ts";
+import type { CodexLimitsSnapshot } from "../types.ts";
 
 export type UsageSessionEntry = SessionsUsageEntry;
 export type UsageTotals = SessionsUsageTotals;
@@ -26,6 +27,9 @@ export type TimeSeriesPoint = SessionUsageTimePoint;
 export type UsageProps = {
   loading: boolean;
   error: string | null;
+  codexLimitsLoading: boolean;
+  codexLimits: CodexLimitsSnapshot | null;
+  codexLimitsError: string | null;
   startDate: string;
   endDate: string;
   sessions: UsageSessionEntry[];

@@ -19,6 +19,7 @@ import { loadDevices } from "./controllers/devices.ts";
 import { loadExecApprovals } from "./controllers/exec-approvals.ts";
 import { loadLogs } from "./controllers/logs.ts";
 import { loadNodes } from "./controllers/nodes.ts";
+import { loadCodexLimits, loadUsage } from "./controllers/usage.ts";
 import { loadPresence } from "./controllers/presence.ts";
 import { loadSessions } from "./controllers/sessions.ts";
 import { loadSkills } from "./controllers/skills.ts";
@@ -224,6 +225,11 @@ export async function refreshActiveTab(host: SettingsHost) {
   }
   if (host.tab === "sessions") {
     await loadSessions(host as unknown as OpenClawApp);
+  }
+  if (host.tab === "usage") {
+    // Codex limits are cheap to fetch and give immediate visibility.
+    await loadCodexLimits(host as unknown as OpenClawApp);
+    await loadUsage(host as unknown as OpenClawApp);
   }
   if (host.tab === "cron") {
     await loadCron(host);

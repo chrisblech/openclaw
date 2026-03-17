@@ -1,7 +1,7 @@
 import { nothing } from "lit";
 import type { AppViewState } from "./app-view-state.ts";
 import type { UsageState } from "./controllers/usage.ts";
-import { loadUsage, loadSessionTimeSeries, loadSessionLogs } from "./controllers/usage.ts";
+import { loadCodexLimits, loadUsage, loadSessionTimeSeries, loadSessionLogs } from "./controllers/usage.ts";
 import { renderUsage } from "./views/usage.ts";
 
 // Module-scope debounce for usage date changes (avoids type-unsafe hacks on state object)
@@ -21,6 +21,9 @@ export function renderUsageTab(state: AppViewState) {
   return renderUsage({
     loading: state.usageLoading,
     error: state.usageError,
+    codexLimitsLoading: state.codexLimitsLoading,
+    codexLimits: state.codexLimits,
+    codexLimitsError: state.codexLimitsError,
     startDate: state.usageStartDate,
     endDate: state.usageEndDate,
     sessions: state.usageResult?.sessions ?? [],
@@ -70,7 +73,10 @@ export function renderUsageTab(state: AppViewState) {
       state.usageSelectedSessions = [];
       debouncedLoadUsage(state);
     },
-    onRefresh: () => loadUsage(state),
+    onRefresh: () => {
+      void loadCodexLimits(state);
+      return loadUsage(state);
+    },
     onTimeZoneChange: (zone) => {
       state.usageTimeZone = zone;
       state.usageSelectedDays = [];

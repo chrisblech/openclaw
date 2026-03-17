@@ -89,6 +89,79 @@ function addUsageTotals(
 }
 
 export function renderUsage(props: UsageProps) {
+  const pct = (n: unknown): number | null => {
+    const v = typeof n === "number" && Number.isFinite(n) ? n : null;
+    if (v === null) {
+      return null;
+    }
+    return Math.max(0, Math.min(100, Math.round(v)));
+  };
+
+  const renderCodexLimitsCard = () => {
+    const snapshot = props.codexLimits;
+    const accounts = snapshot?.accounts ?? [];
+    if (!props.codexLimitsLoading && !props.codexLimitsError && accounts.length === 0) {
+      return nothing;
+    }
+
+    const renderBar = (label: string, remaining: number | null) => {
+      const value = remaining ?? 0;
+      const text = remaining === null ? "–" : `${remaining}%`;
+      const warn = remaining !== null && remaining < 15;
+      return html`
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width: 34px; font-weight: 600; color: var(--muted);">${label}</div>
+          <div style="flex:1; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.08); border: 1px solid var(--border); overflow:hidden;">
+            <div style=${`height: 100%; width: ${value}%; background: ${warn ? "#ff4d4d" : "#4da3ff"};`}></div>
+          </div>
+          <div style="width: 48px; text-align: right; font-variant-numeric: tabular-nums; color: ${warn ? "#ff4d4d" : "var(--text)"};">
+            ${text}
+          </div>
+        </div>
+      `;
+    };
+
+    return html`
+      <section class="card">
+        <div class="row" style="justify-content: space-between; align-items: center; gap: 12px;">
+          <div>
+            <div class="card-title" style="margin: 0;">Nutzung (Codex Limits)</div>
+            <div class="card-subtitle" style="margin-top: 4px;">5h / 7d Kontingente pro Account</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            ${props.codexLimitsLoading
+              ? html`<span style="color: var(--muted); font-size: 12px;">lädt…</span>`
+              : nothing}
+            ${props.codexLimitsError
+              ? html`<span style="color: #ff4d4d; font-size: 12px;">${props.codexLimitsError}</span>`
+              : nothing}
+            <button class="btn btn--secondary" @click=${() => props.onRefresh()} title="Refresh">
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction: column; gap: 14px; margin-top: 14px;">
+          ${accounts.map((acct) => {
+            const name = acct.label || acct.key;
+            const r5h = pct(acct.primary?.remainingPercent);
+            const r7d = pct(acct.secondary?.remainingPercent);
+            return html`
+              <div style="display:flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,0.02);">
+                <div style="display:flex; justify-content: space-between; align-items: baseline; gap: 12px;">
+                  <div style="font-weight: 700;">${name}</div>
+                  <div style="color: var(--muted); font-size: 12px;">${acct.lastOkAt ? `Stand: ${acct.lastOkAt}` : nothing}</div>
+                </div>
+                ${renderBar("5h", r5h)}
+                ${renderBar("7d", r7d)}
+              </div>
+            `;
+          })}
+        </div>
+      </section>
+    `;
+  };
+
   // Show loading skeleton if loading and no data yet
   if (props.loading && !props.totals) {
     // Use inline styles since main stylesheet hasn't loaded yet on initial render
@@ -102,6 +175,7 @@ export function renderUsage(props: UsageProps) {
           50% { opacity: 0.7; }
         }
       </style>
+      ${renderCodexLimitsCard()}
       <section class="card">
         <div class="row" style="justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
           <div style="flex: 1; min-width: 250px;">
@@ -443,6 +517,8 @@ export function renderUsage(props: UsageProps) {
       <div class="usage-page-title">Usage</div>
       <div class="usage-page-subtitle">See where tokens go, when sessions spike, and what drives cost.</div>
     </section>
+
+    ${renderCodexLimitsCard()}
 
     <section class="card usage-header ${props.headerPinned ? "pinned" : ""}">
       <div class="usage-header-row">

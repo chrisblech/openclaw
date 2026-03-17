@@ -660,6 +660,31 @@ export type LogEntry = {
   meta?: Record<string, unknown> | null;
 };
 
+// --- Codex rate limits (from codex_limit_watch) ---
+
+export type CodexLimitWindow = {
+  usedPercent?: number;
+  remainingPercent?: number;
+  resetsAt?: number;
+  windowDurationMins?: number;
+};
+
+export type CodexAccountLimits = {
+  key: string;
+  label?: string;
+  primary?: CodexLimitWindow | null;
+  secondary?: CodexLimitWindow | null;
+  lastOkAt?: string;
+  lastErrorAt?: string;
+  lastError?: string;
+};
+
+export type CodexLimitsSnapshot = {
+  source: "codex-limit-watch";
+  updatedAt?: string;
+  accounts: CodexAccountLimits[];
+};
+
 // ── Attention ───────────────────────────────────────
 
 export type AttentionSeverity = "error" | "warning" | "info";

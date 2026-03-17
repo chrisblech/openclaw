@@ -295,6 +295,9 @@ export class OpenClawApp extends LitElement {
   @state() usageResult: import("./types.js").SessionsUsageResult | null = null;
   @state() usageCostSummary: import("./types.js").CostUsageSummary | null = null;
   @state() usageError: string | null = null;
+  @state() codexLimitsLoading = false;
+  @state() codexLimits: import("./types.js").CodexLimitsSnapshot | null = null;
+  @state() codexLimitsError: string | null = null;
   @state() usageStartDate = (() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
