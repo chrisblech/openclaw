@@ -672,6 +672,8 @@ export type CodexLimitWindow = {
 export type CodexAccountLimits = {
   key: string;
   label?: string;
+  /** Auth profile id this account is expected to map to in the gateway (e.g. openai-codex:default). */
+  authProfileId?: string;
   primary?: CodexLimitWindow | null;
   secondary?: CodexLimitWindow | null;
   lastOkAt?: string;
@@ -682,6 +684,10 @@ export type CodexAccountLimits = {
 export type CodexLimitsSnapshot = {
   source: "codex-limit-watch";
   updatedAt?: string;
+  /** Active gateway auth profile for openai-codex (best-effort). */
+  activeAuthProfileId?: string;
+  /** Key of the codex-limit-watch account that matches activeAuthProfileId (best-effort). */
+  activeAccountKey?: string;
   accounts: CodexAccountLimits[];
 };
 

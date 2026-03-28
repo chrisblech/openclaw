@@ -376,10 +376,16 @@ function emptyCodexLimitsSnapshot(): CodexLimitsSnapshot {
   return { source: "codex-limit-watch", accounts: [] } satisfies CodexLimitsSnapshot;
 }
 
-function readCodexLimitsSnapshot(workspace: unknown): CodexLimitsSnapshot {
+function readCodexLimitsSnapshot(params: { workspace: unknown; config?: ReturnType<typeof loadConfig> }): CodexLimitsSnapshot {
+  const { workspace, config } = params;
   if (!workspace || typeof workspace !== "string") {
     return emptyCodexLimitsSnapshot();
   }
+
+  const activeAuthProfileId =
+    (config?.auth?.order?.["openai-codex"]?.[0] && typeof config.auth.order["openai-codex"]?.[0] === "string"
+      ? config.auth.order["openai-codex"]?.[0]
+      : undefined) ?? undefined;
 
   const statePath = path.join(workspace, "memory", "codex-limit-watch.json");
   try {
@@ -396,6 +402,7 @@ function readCodexLimitsSnapshot(workspace: unknown): CodexLimitsSnapshot {
       return {
         key,
         label: typeof obj.label === "string" ? obj.label : undefined,
+        authProfileId: typeof obj.syncToGatewayProfile === "string" ? obj.syncToGatewayProfile : undefined,
         primary: obj.primary && typeof obj.primary === "object" ? obj.primary : null,
         secondary: obj.secondary && typeof obj.secondary === "object" ? obj.secondary : null,
         lastOkAt: typeof obj.lastOkAt === "string" ? obj.lastOkAt : undefined,
@@ -403,6 +410,17 @@ function readCodexLimitsSnapshot(workspace: unknown): CodexLimitsSnapshot {
         lastError: typeof obj.lastError === "string" ? obj.lastError : undefined,
       } satisfies CodexAccountLimits;
     });
+
+    const activeAccountKey = activeAuthProfileId
+      ? accounts.find((acct) => acct.authProfileId === activeAuthProfileId)?.key
+      : undefined;
+
+    const orderedAccounts = activeAccountKey
+      ? [
+          ...accounts.filter((acct) => acct.key === activeAccountKey),
+          ...accounts.filter((acct) => acct.key !== activeAccountKey),
+        ]
+      : accounts;
 
     // Prefer a real timestamp (so the browser can render it in local timezone).
     let updatedAt: string | undefined;
@@ -421,7 +439,9 @@ function readCodexLimitsSnapshot(workspace: unknown): CodexLimitsSnapshot {
     return {
       source: "codex-limit-watch",
       updatedAt,
-      accounts,
+      activeAuthProfileId,
+      activeAccountKey,
+      accounts: orderedAccounts,
     } satisfies CodexLimitsSnapshot;
   } catch (err) {
     // Missing file => no data yet.
@@ -488,7 +508,7 @@ export const usageHandlers: GatewayRequestHandlers = {
   "usage.codexLimits": async ({ respond }) => {
     const config = loadConfig();
     const workspace = config.agents?.defaults?.workspace;
-    respond(true, readCodexLimitsSnapshot(workspace), undefined);
+    respond(true, readCodexLimitsSnapshot({ workspace, config }), undefined);
   },
   "usage.codexLimits.refresh": async ({ respond }) => {
     const config = loadConfig();
@@ -496,7 +516,7 @@ export const usageHandlers: GatewayRequestHandlers = {
     if (workspace && typeof workspace === "string") {
       await runCodexLimitWatch(workspace);
     }
-    respond(true, readCodexLimitsSnapshot(workspace), undefined);
+    respond(true, readCodexLimitsSnapshot({ workspace, config }), undefined);
   },
   "usage.status": async ({ respond }) => {
     const summary = await loadProviderUsageSummary();

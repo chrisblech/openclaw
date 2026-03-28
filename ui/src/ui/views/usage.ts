@@ -160,10 +160,16 @@ export function renderUsage(props: UsageProps) {
             const name = acct.label || acct.key;
             const r5h = pct(acct.primary?.remainingPercent);
             const r7d = pct(acct.secondary?.remainingPercent);
+            const isActive = snapshot?.activeAccountKey ? snapshot.activeAccountKey === acct.key : false;
             return html`
               <div style="display:flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,0.02);">
                 <div style="display:flex; justify-content: space-between; align-items: baseline; gap: 12px;">
-                  <div style="font-weight: 700;">${name}</div>
+                  <div style="font-weight: 700; display:flex; align-items: baseline; gap: 10px;">
+                    <span>${name}</span>
+                    ${isActive
+                      ? html`<span style="font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); background: rgba(77,163,255,0.12); color: #9ad0ff;">aktiv</span>`
+                      : nothing}
+                  </div>
                   <div style="color: var(--muted); font-size: 12px;">${acct.lastOkAt ? `Stand: ${acct.lastOkAt}` : nothing}</div>
                 </div>
                 ${renderBar("5h", r5h)}

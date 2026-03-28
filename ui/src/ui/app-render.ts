@@ -485,7 +485,10 @@ export function renderApp(state: AppViewState) {
                 return nothing;
               }
               const snapshot = state.codexLimits;
-              const acct = snapshot?.accounts?.[0];
+              const activeKey = snapshot?.activeAccountKey;
+              const acct = activeKey
+                ? snapshot?.accounts?.find((entry) => entry.key === activeKey)
+                : null;
               const pct = (n: unknown): number | null => {
                 const v = typeof n === "number" && Number.isFinite(n) ? n : null;
                 if (v === null) {
