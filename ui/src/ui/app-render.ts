@@ -479,6 +479,52 @@ export function renderApp(state: AppViewState) {
                 <span class="nav-collapse-toggle__icon" aria-hidden="true">${icons.menu}</span>
               </button>
             </div>
+
+            ${(() => {
+              if (navCollapsed) {
+                return nothing;
+              }
+              const snapshot = state.codexLimits;
+              const acct = snapshot?.accounts?.[0];
+              const pct = (n: unknown): number | null => {
+                const v = typeof n === "number" && Number.isFinite(n) ? n : null;
+                if (v === null) {
+                  return null;
+                }
+                return Math.max(0, Math.min(100, Math.round(v)));
+              };
+              const r5h = pct(acct?.primary?.remainingPercent);
+              const r7d = pct(acct?.secondary?.remainingPercent);
+              if (r5h === null && r7d === null) {
+                return nothing;
+              }
+
+              const renderMiniBar = (remaining: number | null, tone: "primary" | "secondary") => {
+                const value = remaining ?? 0;
+                const warn = remaining !== null && remaining < 15;
+                const baseColor = tone === "primary" ? "#4da3ff" : "#7a7cff";
+                const color = warn ? "#ff4d4d" : baseColor;
+                return html`
+                  <div
+                    style="height: 8px; border-radius: 999px; background: rgba(255,255,255,0.08); border: 1px solid var(--border); overflow:hidden;"
+                    aria-label=${remaining === null
+                      ? "Codex quota"
+                      : `Codex quota ${remaining}% remaining`}
+                    title=${remaining === null ? "Codex quota" : `${remaining}% remaining`}
+                  >
+                    <div style=${`height: 100%; width: ${value}%; background: ${color};`}></div>
+                  </div>
+                `;
+              };
+
+              return html`
+                <div style="padding: 10px 14px 0 14px; display:flex; flex-direction: column; gap: 6px;">
+                  ${renderMiniBar(r5h, "primary")}
+                  ${renderMiniBar(r7d, "secondary")}
+                </div>
+              `;
+            })()}
+
             <div class="sidebar-shell__body">
               <nav class="sidebar-nav">
                 ${TAB_GROUPS.map((group) => {
