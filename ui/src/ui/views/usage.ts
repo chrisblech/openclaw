@@ -104,6 +104,18 @@ export function renderUsage(props: UsageProps) {
       return nothing;
     }
 
+    const updatedAtText = (() => {
+      const raw = snapshot?.updatedAt;
+      if (!raw || typeof raw !== "string") {
+        return null;
+      }
+      const ms = Date.parse(raw);
+      if (!Number.isFinite(ms)) {
+        return raw;
+      }
+      return new Date(ms).toLocaleString();
+    })();
+
     const renderBar = (label: string, remaining: number | null) => {
       const value = remaining ?? 0;
       const text = remaining === null ? "–" : `${remaining}%`;
@@ -126,7 +138,9 @@ export function renderUsage(props: UsageProps) {
         <div class="row" style="justify-content: space-between; align-items: center; gap: 12px;">
           <div>
             <div class="card-title" style="margin: 0;">Nutzung (Codex Limits)</div>
-            <div class="card-subtitle" style="margin-top: 4px;">5h / 7d Kontingente pro Account</div>
+            <div class="card-subtitle" style="margin-top: 4px;">
+              5h / 7d Kontingente pro Account${updatedAtText ? html` · Stand: ${updatedAtText}` : nothing}
+            </div>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
             ${props.codexLimitsLoading

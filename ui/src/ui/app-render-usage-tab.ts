@@ -1,7 +1,13 @@
 import { nothing } from "lit";
 import type { AppViewState } from "./app-view-state.ts";
 import type { UsageState } from "./controllers/usage.ts";
-import { loadCodexLimits, loadUsage, loadSessionTimeSeries, loadSessionLogs } from "./controllers/usage.ts";
+import {
+  loadCodexLimits,
+  refreshCodexLimits,
+  loadUsage,
+  loadSessionTimeSeries,
+  loadSessionLogs,
+} from "./controllers/usage.ts";
 import { renderUsage } from "./views/usage.ts";
 
 // Module-scope debounce for usage date changes (avoids type-unsafe hacks on state object)
@@ -74,7 +80,7 @@ export function renderUsageTab(state: AppViewState) {
       debouncedLoadUsage(state);
     },
     onRefresh: () => {
-      void loadCodexLimits(state);
+      void refreshCodexLimits(state);
       return loadUsage(state);
     },
     onTimeZoneChange: (zone) => {

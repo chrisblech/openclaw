@@ -52,6 +52,26 @@ export async function loadCodexLimits(state: UsageState) {
   }
 }
 
+export async function refreshCodexLimits(state: UsageState) {
+  const client = state.client;
+  if (!client || !state.connected) {
+    return;
+  }
+  if (state.codexLimitsLoading) {
+    return;
+  }
+  state.codexLimitsLoading = true;
+  state.codexLimitsError = null;
+  try {
+    const snapshot = await client.request<CodexLimitsSnapshot>("usage.codexLimits.refresh");
+    state.codexLimits = snapshot;
+  } catch (err) {
+    state.codexLimitsError = toErrorMessage(err);
+  } finally {
+    state.codexLimitsLoading = false;
+  }
+}
+
 type DateInterpretationMode = "utc" | "gateway" | "specific";
 
 type UsageDateInterpretationParams = {
