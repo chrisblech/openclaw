@@ -7,6 +7,10 @@ import type {
   CodexLimitsSnapshot,
 } from "../types.ts";
 import type { SessionLogEntry } from "../views/usage.ts";
+import {
+  formatMissingOperatorReadScopeMessage,
+  isMissingOperatorReadScopeError,
+} from "./scope-errors.ts";
 
 export type UsageState = {
   client: GatewayBrowserClient | null;
@@ -290,7 +294,13 @@ export async function loadUsage(
       }
     }
   } catch (err) {
-    state.usageError = toErrorMessage(err);
+    if (isMissingOperatorReadScopeError(err)) {
+      state.usageResult = null;
+      state.usageCostSummary = null;
+      state.usageError = formatMissingOperatorReadScopeMessage("usage");
+    } else {
+      state.usageError = toErrorMessage(err);
+    }
   } finally {
     state.usageLoading = false;
   }
