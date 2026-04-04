@@ -22,11 +22,12 @@ modprobe snd-aloop
 echo snd-aloop | tee /etc/modules-load.d/snd-aloop.conf
 
 TELEFON="alsa-utils pulseaudio ffmpeg sox baresip python3-dev"
+PDFPARSE="poppler-utils tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng imagemagick ghostscript python3-pil python3-fitz python3-tesserocr"
 
 echo "Starte build step 1 (Base image) $BASE_IMAGE:$TAG"
 
 docker build \
-  --build-arg OPENCLAW_DOCKER_APT_PACKAGES="jq nano python3-pip python3-venv xauth $TELEFON" \
+  --build-arg OPENCLAW_DOCKER_APT_PACKAGES="jq nano python3-pip python3-venv xauth $PDFPARSE $TELEFON" \
   --build-arg OPENCLAW_INSTALL_BROWSER=1 \
   --shm-size=1g -t ${BASE_IMAGE}:${TAG} .
 
